@@ -6,3 +6,5 @@ export const config = getDefaultConfig({
   projectId: 'YOUR_WALLETCONNECT_PROJECT_ID',
   chains: [sepolia],
 })
+
+export { sepolia }

@@ -6,19 +6,14 @@ import { FACTORY_ADDRESS, SUPPORTED_TOKENS } from './contracts'
 import factoryAbi from './abi/PayPilotFactory.json'
 import vaultAbi from './abi/PayPilotVault.json'
 
-// ----------
-// ERC20 Application Binary Interface - Minimal ABI for token interactions
-// We only need the function "approve()"" and "balanceOf()"" for deposits
-// ----------
+// ERC20 ABI - Only the functions we need for token interactions
 const erc20Abi = [
-  // approve const
   {
     name: 'approve',
     type: 'function',
     inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
     outputs: [{ type: 'bool' }],
   },
-  // balanceOf const
   {
     name: 'balanceOf',
     type: 'function',
@@ -26,7 +21,6 @@ const erc20Abi = [
     outputs: [{ type: 'uint256' }],
     stateMutability: 'view',
   },
-  // decimals const
   {
     name: 'decimals',
     type: 'function',
@@ -36,22 +30,29 @@ const erc20Abi = [
   },
 ] as const
 
-// ----------
+// Convert interval in seconds to human readable text
+function formatInterval(seconds: bigint): string {
+  const secs = Number(seconds)
+  if (secs === 0) return 'One-time'
+  if (secs === 60) return 'Every minute'
+  if (secs === 3600) return 'Hourly'
+  if (secs === 86400) return 'Daily'
+  if (secs === 604800) return 'Weekly'
+  if (secs === 2592000) return 'Monthly'
+  return `Every ${secs} seconds`
+}
+
 // Main App Component
-// ----------
 function App() {
-  // Get the connected wallet information from RainbowKit/wagmi
   const { address, isConnected } = useAccount()
 
   return (
     <div className="min-h-screen p-8">
-      {/* Header with logo and wallet connect button */}
       <header className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">✈️ PayPilot</h1>
         <ConnectButton />
       </header>
 
-      {/* Main content - show dashboard if connected, otherwise prompt to connect */}
       <main>
         {isConnected ? (
           <Dashboard userAddress={address!} />
@@ -65,12 +66,8 @@ function App() {
   )
 }
 
-// ----------
-// Dashboard Component
-// Shows the vault status and available controls
-// ----------
+// Dashboard - Shows vault status and controls
 function Dashboard({ userAddress }: { userAddress: `0x${string}` }) {
-  // Check if the user already has a vault by calling factory.getVault()
   const { data: vaultAddress, refetch: refetchVault } = useReadContract({
     address: FACTORY_ADDRESS,
     abi: factoryAbi.abi,
@@ -78,15 +75,11 @@ function Dashboard({ userAddress }: { userAddress: `0x${string}` }) {
     args: [userAddress],
   })
 
-  // Cast to a string for display and comparison
   const vaultAddressStr = vaultAddress as string | undefined
-  
-  // Check if the vault exists (address is not zero)
   const hasVault = vaultAddressStr && vaultAddressStr !== '0x0000000000000000000000000000000000000000'
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      {/* Vault status */}
       <div className="bg-gray-800 rounded-lg p-6">
         <h2 className="text-xl font-semibold mb-4">Your Vault</h2>
         
@@ -100,7 +93,6 @@ function Dashboard({ userAddress }: { userAddress: `0x${string}` }) {
         )}
       </div>
 
-      {/* Show the vault dashboard only if the vault exists */}
       {hasVault && (
         <VaultDashboard 
           vaultAddress={vaultAddressStr as `0x${string}`} 
@@ -111,27 +103,17 @@ function Dashboard({ userAddress }: { userAddress: `0x${string}` }) {
   )
 }
 
-// ----------
-// Create Vault Button Component
-// Calls factory.createVault() to deploy a new vault
-// ----------
+// Create Vault Button - Deploys a new vault via the factory
 function CreateVaultButton({ onSuccess }: { onSuccess: () => void }) {
-  // Hook to write to the contract
   const { writeContract, data: hash, isPending } = useWriteContract()
-  
-  // Hook to wait for the transaction confirmation
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  })
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  // Refresh the vault data when the transaction succeeds
   useEffect(() => {
     if (isSuccess) {
       onSuccess()
     }
   }, [isSuccess, onSuccess])
 
-  // Call the factory to create a new vault
   const handleCreate = () => {
     writeContract({
       address: FACTORY_ADDRESS,
@@ -154,15 +136,12 @@ function CreateVaultButton({ onSuccess }: { onSuccess: () => void }) {
   )
 }
 
-// ----------
-// Vault Dashboard Component
-// Shows balances and deposit/withdraw tabs
-// ----------
+// Vault Dashboard - Shows balances and tabs for deposit/withdraw/rules
 function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${string}`, userAddress: `0x${string}` }) {
-  // Track which tab is active
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit')
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'rules'>('deposit')
+  const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
-  // Get the vault's USDC balance
+  // Get vault USDC balance
   const { data: vaultBalance, refetch: refetchVaultBalance } = useReadContract({
     address: SUPPORTED_TOKENS.USDC as `0x${string}`,
     abi: erc20Abi,
@@ -170,7 +149,7 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
     args: [vaultAddress],
   })
 
-  // Get the user's wallet USDC balance
+  // Get user wallet USDC balance
   const { data: userBalance, refetch: refetchUserBalance } = useReadContract({
     address: SUPPORTED_TOKENS.USDC as `0x${string}`,
     abi: erc20Abi,
@@ -178,15 +157,18 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
     args: [userAddress],
   })
 
-  // Helper to refresh all balances after a transaction
   const refetchAll = () => {
     refetchVaultBalance()
     refetchUserBalance()
   }
 
+  const refreshRules = () => {
+    setRulesRefreshKey(prev => prev + 1)
+  }
+
   return (
     <div className="space-y-6">
-      {/* Balance cards - show vault and wallet balances side by side */}
+      {/* Balance cards */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-gray-800 rounded-lg p-4">
           <p className="text-gray-400 text-sm">Vault Balance</p>
@@ -202,10 +184,9 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
         </div>
       </div>
 
-      {/* Tab switcher and forms */}
+      {/* Tab navigation and content */}
       <div className="bg-gray-800 rounded-lg p-6">
-        {/* Tab buttons */}
-        <div className="flex gap-4 mb-6">
+        <div className="flex gap-2 mb-6">
           <button
             onClick={() => setActiveTab('deposit')}
             className={`px-4 py-2 rounded-lg font-medium ${
@@ -222,20 +203,39 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
           >
             Withdraw
           </button>
+          <button
+            onClick={() => setActiveTab('rules')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'rules' ? 'bg-blue-600' : 'bg-gray-700'
+            }`}
+          >
+            ⚡ Payment Rules
+          </button>
         </div>
 
-        {/* Show active form */}
-        {activeTab === 'deposit' ? (
+        {activeTab === 'deposit' && (
           <DepositForm 
             vaultAddress={vaultAddress} 
             userBalance={userBalance as bigint | undefined}
             onSuccess={refetchAll}
           />
-        ) : (
+        )}
+        {activeTab === 'withdraw' && (
           <WithdrawForm 
             vaultAddress={vaultAddress}
             vaultBalance={vaultBalance as bigint | undefined}
             onSuccess={refetchAll}
+          />
+        )}
+        {activeTab === 'rules' && (
+          <PaymentRulesTab 
+            vaultAddress={vaultAddress}
+            refreshKey={rulesRefreshKey}
+            onRuleCreated={refreshRules}
+            onRuleExecuted={() => {
+              refreshRules()
+              refetchAll()
+            }}
           />
         )}
       </div>
@@ -243,10 +243,7 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
   )
 }
 
-// ----------
-// Deposit Form Component
-// Two-step process: 1) Approve USDC, 2) Deposit to vault
-// ----------
+// Deposit Form - Two-step: approve then deposit
 function DepositForm({ 
   vaultAddress, 
   userBalance,
@@ -256,32 +253,26 @@ function DepositForm({
   userBalance: bigint | undefined
   onSuccess: () => void 
 }) {
-  // Form state
   const [amount, setAmount] = useState('')
   const [step, setStep] = useState<'approve' | 'deposit'>('approve')
 
-  // Contract write hooks for approve and deposit
   const { writeContract: writeApprove, data: approveHash, isPending: isApprovePending } = useWriteContract()
   const { writeContract: writeDeposit, data: depositHash, isPending: isDepositPending } = useWriteContract()
 
-  // Wait for the approve transaction
   const { isLoading: isApproveConfirming, isSuccess: isApproveSuccess } = useWaitForTransactionReceipt({
     hash: approveHash,
   })
 
-  // Wait for the deposit transaction
   const { isLoading: isDepositConfirming, isSuccess: isDepositSuccess } = useWaitForTransactionReceipt({
     hash: depositHash,
   })
 
-  // Move to deposit step after approve succeeds
   useEffect(() => {
     if (isApproveSuccess) {
       setStep('deposit')
     }
   }, [isApproveSuccess])
 
-  // Reset the form after deposit succeeds
   useEffect(() => {
     if (isDepositSuccess) {
       setAmount('')
@@ -290,10 +281,9 @@ function DepositForm({
     }
   }, [isDepositSuccess, onSuccess])
 
-  // Step 1: Approve vault to spend USDC
   const handleApprove = () => {
     if (!amount) return
-    const amountWei = parseUnits(amount, 6) // USDC has 6 decimals
+    const amountWei = parseUnits(amount, 6)
     writeApprove({
       address: SUPPORTED_TOKENS.USDC as `0x${string}`,
       abi: erc20Abi,
@@ -302,7 +292,6 @@ function DepositForm({
     })
   }
 
-  // Step 2: Deposit USDC into vault
   const handleDeposit = () => {
     if (!amount) return
     const amountWei = parseUnits(amount, 6)
@@ -314,12 +303,10 @@ function DepositForm({
     })
   }
 
-  // Calculate max deposit amount from the wallet balance
   const maxBalance = userBalance ? formatUnits(userBalance, 6) : '0'
 
   return (
     <div className="space-y-4">
-      {/* Amount input */}
       <div>
         <label className="block text-sm text-gray-400 mb-2">Amount (USDC)</label>
         <div className="flex gap-2">
@@ -340,7 +327,6 @@ function DepositForm({
         <p className="text-gray-500 text-sm mt-1">Available: {maxBalance} USDC</p>
       </div>
 
-      {/* Action button - changes based on current step */}
       {step === 'approve' ? (
         <button
           onClick={handleApprove}
@@ -362,10 +348,7 @@ function DepositForm({
   )
 }
 
-// ----------
-// Withdraw Form Component
-// Single step: withdraw from vault to wallet
-// ----------
+// Withdraw Form - Single step withdrawal
 function WithdrawForm({ 
   vaultAddress, 
   vaultBalance,
@@ -376,14 +359,9 @@ function WithdrawForm({
   onSuccess: () => void 
 }) {
   const [amount, setAmount] = useState('')
-
   const { writeContract, data: hash, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-  })
-
-  // Reset form after withdraw succeeds
   useEffect(() => {
     if (isSuccess) {
       setAmount('')
@@ -391,7 +369,6 @@ function WithdrawForm({
     }
   }, [isSuccess, onSuccess])
 
-  // Call vault.withdraw()
   const handleWithdraw = () => {
     if (!amount) return
     const amountWei = parseUnits(amount, 6)
@@ -403,12 +380,10 @@ function WithdrawForm({
     })
   }
 
-  // Max withdraw is the vault balance
   const maxBalance = vaultBalance ? formatUnits(vaultBalance, 6) : '0'
 
   return (
     <div className="space-y-4">
-      {/* Amount input */}
       <div>
         <label className="block text-sm text-gray-400 mb-2">Amount (USDC)</label>
         <div className="flex gap-2">
@@ -429,7 +404,6 @@ function WithdrawForm({
         <p className="text-gray-500 text-sm mt-1">Vault balance: {maxBalance} USDC</p>
       </div>
 
-      {/* Withdraw button */}
       <button
         onClick={handleWithdraw}
         disabled={!amount || isPending || isConfirming}
@@ -437,6 +411,318 @@ function WithdrawForm({
       >
         {isPending ? 'Confirm in wallet...' : isConfirming ? 'Withdrawing...' : 'Withdraw'}
       </button>
+    </div>
+  )
+}
+
+// Payment Rules Tab - Create and manage automated payments
+function PaymentRulesTab({ 
+  vaultAddress, 
+  refreshKey,
+  onRuleCreated,
+  onRuleExecuted
+}: { 
+  vaultAddress: `0x${string}`
+  refreshKey: number
+  onRuleCreated: () => void
+  onRuleExecuted: () => void
+}) {
+  const [showCreateForm, setShowCreateForm] = useState(false)
+
+  return (
+    <div className="space-y-6">
+      {!showCreateForm ? (
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="w-full bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium"
+        >
+          + Create Payment Rule
+        </button>
+      ) : (
+        <CreateRuleForm 
+          vaultAddress={vaultAddress}
+          onSuccess={() => {
+            setShowCreateForm(false)
+            onRuleCreated()
+          }}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      <RulesList 
+        vaultAddress={vaultAddress} 
+        refreshKey={refreshKey}
+        onRuleExecuted={onRuleExecuted}
+        onRuleCancelled={onRuleCreated}
+      />
+    </div>
+  )
+}
+
+// Create Rule Form - Form to create a new payment rule
+function CreateRuleForm({ 
+  vaultAddress, 
+  onSuccess,
+  onCancel
+}: { 
+  vaultAddress: `0x${string}`
+  onSuccess: () => void
+  onCancel: () => void
+}) {
+  const [recipient, setRecipient] = useState('')
+  const [amount, setAmount] = useState('')
+  const [interval, setInterval] = useState('0')
+  const [description, setDescription] = useState('')
+
+  const { writeContract, data: hash, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  useEffect(() => {
+    if (isSuccess) {
+      onSuccess()
+    }
+  }, [isSuccess, onSuccess])
+
+  const handleCreate = () => {
+    if (!recipient || !amount) return
+
+    writeContract({
+      address: vaultAddress,
+      abi: vaultAbi.abi,
+      functionName: 'createRule',
+      args: [
+        SUPPORTED_TOKENS.USDC,
+        recipient,
+        parseUnits(amount, 6),
+        BigInt(interval),
+        description || 'Payment rule'
+      ],
+    })
+  }
+
+  return (
+    <div className="bg-gray-700 rounded-lg p-4 space-y-4">
+      <h3 className="font-semibold">Create Payment Rule</h3>
+      
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Recipient Address</label>
+        <input
+          type="text"
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          placeholder="0x..."
+          className="w-full bg-gray-600 rounded-lg px-4 py-2 text-white"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Amount (USDC)</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="0.00"
+          className="w-full bg-gray-600 rounded-lg px-4 py-2 text-white"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Frequency</label>
+        <select
+          value={interval}
+          onChange={(e) => setInterval(e.target.value)}
+          className="w-full bg-gray-600 rounded-lg px-4 py-2 text-white"
+        >
+          <option value="0">One-time payment</option>
+          <option value="60">Every minute (testing)</option>
+          <option value="3600">Hourly</option>
+          <option value="86400">Daily</option>
+          <option value="604800">Weekly</option>
+          <option value="2592000">Monthly (30 days)</option>
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Description</label>
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="e.g., Rent payment"
+          className="w-full bg-gray-600 rounded-lg px-4 py-2 text-white"
+        />
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          onClick={handleCreate}
+          disabled={!recipient || !amount || isPending || isConfirming}
+          className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-4 py-2 rounded-lg font-medium"
+        >
+          {isPending ? 'Confirm...' : isConfirming ? 'Creating...' : 'Create Rule'}
+        </button>
+        <button
+          onClick={onCancel}
+          className="bg-gray-600 hover:bg-gray-500 px-4 py-2 rounded-lg"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Rules List - Displays all payment rules from the vault
+function RulesList({ 
+  vaultAddress,
+  refreshKey,
+  onRuleExecuted,
+  onRuleCancelled
+}: { 
+  vaultAddress: `0x${string}`
+  refreshKey: number
+  onRuleExecuted: () => void
+  onRuleCancelled: () => void
+}) {
+  const { data: ruleCount } = useReadContract({
+    address: vaultAddress,
+    abi: vaultAbi.abi,
+    functionName: 'ruleCount',
+    scopeKey: `rules-${refreshKey}`,
+  })
+
+  const count = Number(ruleCount || 0)
+
+  if (count === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <p>No payment rules yet.</p>
+        <p className="text-sm">Create your first autopilot payment above!</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-semibold text-gray-300">Your Payment Rules</h3>
+      {Array.from({ length: count }, (_, i) => (
+        <RuleCard 
+          key={`${refreshKey}-${i}`}
+          vaultAddress={vaultAddress} 
+          ruleId={i}
+          onExecuted={onRuleExecuted}
+          onCancelled={onRuleCancelled}
+        />
+      ))}
+    </div>
+  )
+}
+
+// Rule Card - Single payment rule with execute and cancel buttons
+function RuleCard({ 
+  vaultAddress, 
+  ruleId,
+  onExecuted,
+  onCancelled
+}: { 
+  vaultAddress: `0x${string}`
+  ruleId: number
+  onExecuted: () => void
+  onCancelled: () => void
+}) {
+  const { data: rule } = useReadContract({
+    address: vaultAddress,
+    abi: vaultAbi.abi,
+    functionName: 'getRule',
+    args: [BigInt(ruleId)],
+  })
+
+  const { writeContract: executeWrite, data: executeHash, isPending: isExecuting } = useWriteContract()
+  const { isLoading: isExecuteConfirming, isSuccess: isExecuteSuccess } = useWaitForTransactionReceipt({ 
+    hash: executeHash 
+  })
+
+  const { writeContract: cancelWrite, data: cancelHash, isPending: isCancelling } = useWriteContract()
+  const { isLoading: isCancelConfirming, isSuccess: isCancelSuccess } = useWaitForTransactionReceipt({ 
+    hash: cancelHash 
+  })
+
+  useEffect(() => {
+    if (isExecuteSuccess) onExecuted()
+  }, [isExecuteSuccess, onExecuted])
+
+  useEffect(() => {
+    if (isCancelSuccess) onCancelled()
+  }, [isCancelSuccess, onCancelled])
+
+  const ruleData = rule as {
+    id: bigint
+    token: string
+    recipient: string
+    amount: bigint
+    interval: bigint
+    lastExecuted: bigint
+    active: boolean
+    description: string
+  } | undefined
+
+  if (!ruleData || !ruleData.active) {
+    return null
+  }
+
+  const handleExecute = () => {
+    executeWrite({
+      address: vaultAddress,
+      abi: vaultAbi.abi,
+      functionName: 'executeRule',
+      args: [BigInt(ruleId)],
+    })
+  }
+
+  const handleCancel = () => {
+    cancelWrite({
+      address: vaultAddress,
+      abi: vaultAbi.abi,
+      functionName: 'cancelRule',
+      args: [BigInt(ruleId)],
+    })
+  }
+
+  return (
+    <div className="bg-gray-700 rounded-lg p-4">
+      <div className="flex justify-between items-start mb-2">
+        <div>
+          <p className="font-medium">{ruleData.description}</p>
+          <p className="text-sm text-gray-400">
+            To: {ruleData.recipient.slice(0, 6)}...{ruleData.recipient.slice(-4)}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-bold text-green-400">
+            {formatUnits(ruleData.amount, 6)} USDC
+          </p>
+          <p className="text-sm text-gray-400">
+            {formatInterval(ruleData.interval)}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex gap-2 mt-3">
+        <button
+          onClick={handleExecute}
+          disabled={isExecuting || isExecuteConfirming}
+          className="flex-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 px-3 py-1 rounded text-sm font-medium"
+        >
+          {isExecuting || isExecuteConfirming ? 'Executing...' : '▶ Execute Now'}
+        </button>
+        <button
+          onClick={handleCancel}
+          disabled={isCancelling || isCancelConfirming}
+          className="bg-red-600 hover:bg-red-700 disabled:bg-gray-600 px-3 py-1 rounded text-sm font-medium"
+        >
+          {isCancelling || isCancelConfirming ? '...' : '✕'}
+        </button>
+      </div>
     </div>
   )
 }

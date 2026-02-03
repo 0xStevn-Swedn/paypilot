@@ -5,9 +5,10 @@ createConfig({
   integrator: 'paypilot',
 })
 
-// Sepolia USDC address (where the vault lives)
-const SEPOLIA_USDC = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238'
-const SEPOLIA_CHAIN_ID = 11155111
+// Using mainnet USDC for quotes (LI.FI doesn't support testnets)
+// In production this would match the actual vault deployment chain
+const DEST_USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
+const DEST_CHAIN_ID = 1 // Ethereum mainnet
 
 // Get a cross-chain quote for depositing into the vault
 export async function getCrossChainQuote(params: {
@@ -19,9 +20,9 @@ export async function getCrossChainQuote(params: {
   try {
     const quote = await getQuote({
       fromChain: params.fromChainId,
-      toChain: SEPOLIA_CHAIN_ID,
+      toChain: DEST_CHAIN_ID,
       fromToken: params.fromTokenAddress,
-      toToken: SEPOLIA_USDC,
+      toToken: DEST_USDC,
       fromAmount: params.fromAmount,
       fromAddress: params.fromAddress,
     })

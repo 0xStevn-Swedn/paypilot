@@ -141,7 +141,7 @@ function CreateVaultButton({ onSuccess }: { onSuccess: () => void }) {
 
 // Vault Dashboard - Shows balances and tabs for deposit/withdraw/rules
 function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${string}`, userAddress: `0x${string}` }) {
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'rules'>('deposit')
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'rules' | 'crosschain'>('deposit')
   const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
   // Get vault USDC balance
@@ -214,6 +214,14 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
           >
             ⚡ Payment Rules
           </button>
+          <button
+            onClick={() => setActiveTab('crosschain')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'crosschain' ? 'bg-blue-600' : 'bg-gray-700'
+            }`}
+          >
+            🌐 Cross-Chain
+          </button>
         </div>
 
         {activeTab === 'deposit' && (
@@ -241,7 +249,188 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
             }}
           />
         )}
+        {activeTab === 'crosschain' && (
+          <CrossChainDeposit 
+            vaultAddress={vaultAddress}
+            userAddress={userAddress}
+            onSuccess={refetchAll}
+          />
+        )}
+
       </div>
+    </div>
+  )
+}
+
+// Popular chains for the dropdown (subset of all the LI.FI supported chains)
+const POPULAR_CHAINS = [
+  { id: 42161, name: 'Arbitrum', nativeToken: 'ETH' },
+  { id: 8453, name: 'Base', nativeToken: 'ETH' },
+  { id: 10, name: 'Optimism', nativeToken: 'ETH' },
+  { id: 137, name: 'Polygon', nativeToken: 'POL' },
+  { id: 56, name: 'BSC', nativeToken: 'BNB' },
+  { id: 43114, name: 'Avalanche', nativeToken: 'AVAX' },
+]
+
+// Common token addresses per chain (against USDC)
+const CHAIN_USDC: Record<number, string> = {
+  42161: '0xaf88d065e77c8cC2239327C5EDb3A432268e5831', // Arbitrum
+  8453: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // Base
+  10: '0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85',   // Optimism
+  137: '0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359',   // Polygon
+  56: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d',    // BSC
+  43114: '0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E', // Avalanche
+}
+
+// Cross-Chain Deposit - Deposit from another chain into the vault using the LI.FI protocol
+function CrossChainDeposit({ 
+  vaultAddress, 
+  userAddress,
+  onSuccess 
+}: { 
+  vaultAddress: `0x${string}`
+  userAddress: `0x${string}`
+  onSuccess: () => void 
+}) {
+  const [selectedChain, setSelectedChain] = useState(42161) // Default to Arbitrum
+  const [amount, setAmount] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [quote, setQuote] = useState<{
+    estimate: {
+      fromAmount: string
+      toAmount: string
+      executionDuration: number
+    }
+    tool: string
+  } | null>(null)
+  const [error, setError] = useState('')
+
+  // Get a cross-chain "quote" from the backend
+  const handleGetQuote = async () => {
+    if (!amount) return
+
+    setLoading(true)
+    setError('')
+    setQuote(null)
+
+    try {
+      // Convert the amount to wei - Lowest unit of ETH (6 decimals for USDC)
+      const fromAmount = String(Number(amount) * 1e6)
+      const fromTokenAddress = CHAIN_USDC[selectedChain]
+
+      if (!fromTokenAddress) {
+        setError('USDC not available on this chain')
+        return
+      }
+
+      const response = await fetch(`${API_URL}/api/quote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromChainId: selectedChain,
+          fromTokenAddress,
+          fromAmount,
+          fromAddress: userAddress,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+
+      setQuote(data)
+    } catch (err) {
+      setError('Could not connect to backend')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const selectedChainName = POPULAR_CHAINS.find(c => c.id === selectedChain)?.name || 'Unknown'
+
+  return (
+    <div className="space-y-4">
+      <p className="text-gray-400 text-sm">
+        Deposit USDC from another chain into your vault. Powered by LI.FI.
+      </p>
+
+      {/* Selector of the source chain */}
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Source Chain</label>
+        <select
+          value={selectedChain}
+          onChange={(e) => {
+            setSelectedChain(Number(e.target.value))
+            setQuote(null)
+          }}
+          className="w-full bg-gray-700 rounded-lg px-4 py-2 text-white"
+        >
+          {POPULAR_CHAINS.map(chain => (
+            <option key={chain.id} value={chain.id}>
+              {chain.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Amount to input */}
+      <div>
+        <label className="block text-sm text-gray-400 mb-1">Amount (USDC on {selectedChainName})</label>
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => {
+            setAmount(e.target.value)
+            setQuote(null)
+          }}
+          placeholder="0.00"
+          className="w-full bg-gray-700 rounded-lg px-4 py-2 text-white"
+        />
+      </div>
+
+      {/* Get a "quote" button */}
+      <button
+        onClick={handleGetQuote}
+        disabled={!amount || loading}
+        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-3 rounded-lg font-medium"
+      >
+        {loading ? 'Getting quote...' : 'Get Cross-Chain Quote'}
+      </button>
+
+      {/* Error message */}
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+
+      {/* Quote result */}
+      {quote && (
+        <div className="bg-gray-700 rounded-lg p-4 space-y-2">
+          <h4 className="font-medium text-green-400">Quote Ready</h4>
+          <div className="text-sm space-y-1">
+            <p className="text-gray-300">
+              Send: {(Number(quote.estimate.fromAmount) / 1e6).toFixed(2)} USDC on {selectedChainName}
+            </p>
+            <p className="text-gray-300">
+              Receive: {(Number(quote.estimate.toAmount) / 1e6).toFixed(2)} USDC in vault
+            </p>
+            <p className="text-gray-400">
+              Route: {quote.tool}
+            </p>
+            <p className="text-gray-400">
+              Estimated time: ~{Math.ceil(quote.estimate.executionDuration / 60)} minutes
+            </p>
+          </div>
+          <button
+            className="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg font-medium mt-2"
+            onClick={() => {
+              alert('Cross-chain execution coming soon! For now, use same-chain deposits.')
+            }}
+          >
+            Execute Cross-Chain Deposit
+          </button>
+        </div>
+      )}
     </div>
   )
 }

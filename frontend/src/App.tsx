@@ -30,6 +30,9 @@ const erc20Abi = [
   },
 ] as const
 
+// Backend local API URL
+const API_URL = 'http://localhost:3001'
+
 // Convert interval in seconds to human readable text
 function formatInterval(seconds: bigint): string {
   const secs = Number(seconds)
@@ -415,6 +418,72 @@ function WithdrawForm({
   )
 }
 
+// AI Input - Natural language payment parsing to transform instruction in the standard JSON structure
+function AIInput({ onParsed }: { 
+  onParsed: (data: { recipient: string, amount: number, interval: number, description: string }) => void 
+}) {
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return
+    
+    setLoading(true)
+    setError('')
+
+    try {
+      const response = await fetch(`${API_URL}/api/parse`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message }),
+      })
+
+      const data = await response.json()
+
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+
+      // Send parsed data to parent component
+      onParsed(data)
+      setMessage('')
+    } catch (err) {
+      setError('Could not connect to AI service')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="bg-gray-700 rounded-lg p-4 space-y-3">
+      <label className="block text-sm text-gray-300 font-medium">
+        Describe your payment in plain English
+      </label>
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+          placeholder='e.g. "pay alice.eth 100 USDC every week"'
+          disabled={loading}
+          className="flex-1 bg-gray-600 rounded-lg px-4 py-2 text-white placeholder-gray-400"
+        />
+        <button
+          onClick={handleSubmit}
+          disabled={loading || !message.trim()}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-4 py-2 rounded-lg font-medium"
+        >
+          {loading ? '...' : 'Parse'}
+        </button>
+      </div>
+      {error && <p className="text-red-400 text-sm">{error}</p>}
+    </div>
+  )
+}
+
 // Payment Rules Tab - Create and manage automated payments
 function PaymentRulesTab({ 
   vaultAddress, 
@@ -428,24 +497,54 @@ function PaymentRulesTab({
   onRuleExecuted: () => void
 }) {
   const [showCreateForm, setShowCreateForm] = useState(false)
+  // Pre-filled values from AI parsing
+  const [prefill, setPrefill] = useState<{
+    recipient: string
+    amount: string
+    interval: string
+    description: string
+  } | null>(null)
+
+  // Called when AI successfully parses a message
+  const handleAIParsed = (data: { recipient: string, amount: number, interval: number, description: string }) => {
+    setPrefill({
+      recipient: data.recipient,
+      amount: String(data.amount),
+      interval: String(data.interval),
+      description: data.description,
+    })
+    setShowCreateForm(true)
+  }
 
   return (
     <div className="space-y-6">
+      {/* AI natural language input */}
+      <AIInput onParsed={handleAIParsed} />
+
+      {/* Manual create button or form */}
       {!showCreateForm ? (
         <button
-          onClick={() => setShowCreateForm(true)}
+          onClick={() => {
+            setPrefill(null)
+            setShowCreateForm(true)
+          }}
           className="w-full bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg font-medium"
         >
-          + Create Payment Rule
+          + Create Payment Rule Manually
         </button>
       ) : (
         <CreateRuleForm 
           vaultAddress={vaultAddress}
+          prefill={prefill}
           onSuccess={() => {
             setShowCreateForm(false)
+            setPrefill(null)
             onRuleCreated()
           }}
-          onCancel={() => setShowCreateForm(false)}
+          onCancel={() => {
+            setShowCreateForm(false)
+            setPrefill(null)
+          }}
         />
       )}
 
@@ -462,17 +561,19 @@ function PaymentRulesTab({
 // Create Rule Form - Form to create a new payment rule
 function CreateRuleForm({ 
   vaultAddress, 
+  prefill,
   onSuccess,
   onCancel
 }: { 
   vaultAddress: `0x${string}`
+  prefill: { recipient: string, amount: string, interval: string, description: string } | null
   onSuccess: () => void
   onCancel: () => void
 }) {
-  const [recipient, setRecipient] = useState('')
-  const [amount, setAmount] = useState('')
-  const [interval, setInterval] = useState('0')
-  const [description, setDescription] = useState('')
+  const [recipient, setRecipient] = useState(prefill?.recipient || '')
+  const [amount, setAmount] = useState(prefill?.amount || '')
+  const [interval, setInterval] = useState(prefill?.interval || '0')
+  const [description, setDescription] = useState(prefill?.description || '')
 
   const { writeContract, data: hash, isPending } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })

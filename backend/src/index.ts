@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { parsePaymentIntent } from './ai.js'
+import { getCrossChainQuote, getSupportedChains } from './lifi.js'
 
 dotenv.config()
 
@@ -29,6 +30,27 @@ app.post('/api/parse', async (req, res) => {
   console.log('Result:', result)
 
   res.json(result)
+})
+
+// Get a cross-chain "quote" for depositing into vault
+app.post('/api/quote', async (req, res) => {
+  const { fromChainId, fromTokenAddress, fromAmount, fromAddress } = req.body
+
+  if (!fromChainId || !fromTokenAddress || !fromAmount || !fromAddress) {
+    return res.status(400).json({ error: 'Missing required fields: fromChainId, fromTokenAddress, fromAmount, fromAddress' })
+  }
+
+  console.log('Getting quote:', { fromChainId, fromTokenAddress, fromAmount })
+  const result = await getCrossChainQuote({ fromChainId, fromTokenAddress, fromAmount, fromAddress })
+  console.log('Quote result:', result)
+
+  res.json(result)
+})
+
+// Get the supported chains
+app.get('/api/chains', async (req, res) => {
+  const chains = await getSupportedChains()
+  res.json(chains)
 })
 
 app.listen(PORT, () => {

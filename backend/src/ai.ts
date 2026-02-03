@@ -1,4 +1,8 @@
 import OpenAI from 'openai'
+import dotenv from 'dotenv'
+
+// Load .env before reading the API key
+dotenv.config()
 
 // Initialie the OpenAI client
 const openai = new OpenAI({apiKey: process.env.OPENAI_API_KEY})
@@ -51,7 +55,7 @@ If you cannot parse the message, respond with:
 export async function parsePaymentIntent(message: string): Promise<PaymentIntent | {error: string }> {
     try {
         const response = await openai.chat.completions.create({
-            model: 'gpt-40-mini',
+            model: 'gpt-4o-mini',
             messages: [
                 { role: 'system', content: SYSTEM_PROMPT },
                 { role: 'user', content: message }            
@@ -62,8 +66,10 @@ export async function parsePaymentIntent(message: string): Promise<PaymentIntent
 
         const content = response.choices[0]?.message?.content || ''
 
+            console.log('Raw AI response:', content)
+
         // Extract the JSON structure from the response
-        const jsonMatch = content.match(/\{{\s\S}*\}/)
+        const jsonMatch = content.match(/\{[\s\S]*\}/)
         if (!jsonMatch) {
             return {error: 'Failed to parse the AI response' }
         }

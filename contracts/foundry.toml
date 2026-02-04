@@ -6,6 +6,8 @@ solc = "0.8.20"
 
 [rpc_endpoints]
 sepolia = "${SEPOLIA_RPC_URL}"
+arc_testnet = "https://rpc.testnet.arc.network"
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+arc_testnet = { key = "${ETHERSCAN_API_KEY}", url = "https://testnet.arcscan.app/api" }

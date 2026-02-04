@@ -3,6 +3,7 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { parsePaymentIntent } from './ai.js'
 import { getCrossChainQuote, getSupportedChains } from './lifi.js'
+import { processAgentMessage } from './agent.js'
 
 dotenv.config()
 
@@ -28,6 +29,21 @@ app.post('/api/parse', async (req, res) => {
   console.log('Parsing:', message)
   const result = await parsePaymentIntent(message)
   console.log('Result:', result)
+
+  res.json(result)
+})
+
+// AI agent conversation (general) endpoint
+app.post('/api/agent', async (req, res) => {
+  const { message } = req.body
+
+  if (!message) {
+    return res.status(400).json({ error: 'Message is required' })
+  }
+
+  console.log('Agent input:', message)
+  const result = await processAgentMessage(message)
+  console.log('Agent output:', result)
 
   res.json(result)
 })

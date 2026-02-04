@@ -141,7 +141,7 @@ function CreateVaultButton({ onSuccess }: { onSuccess: () => void }) {
 
 // Vault Dashboard - Shows balances and tabs for deposit/withdraw/rules
 function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${string}`, userAddress: `0x${string}` }) {
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'rules' | 'crosschain'>('deposit')
+  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw' | 'rules' | 'crosschain' | 'agent'>('agent')
   const [rulesRefreshKey, setRulesRefreshKey] = useState(0)
 
   // Get vault USDC balance
@@ -222,6 +222,14 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
           >
             🌐 Cross-Chain
           </button>
+          <button
+            onClick={() => setActiveTab('agent')}
+            className={`px-4 py-2 rounded-lg font-medium ${
+              activeTab === 'agent' ? 'bg-blue-600' : 'bg-gray-700'
+            }`}
+          >
+            🤖 Agent
+          </button>
         </div>
 
         {activeTab === 'deposit' && (
@@ -256,10 +264,201 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
             onSuccess={refetchAll}
           />
         )}
+        {activeTab === 'agent' && (
+          <AgentChat
+            vaultAddress={vaultAddress}
+            userAddress={userAddress}
+            onActionComplete={refetchAll}
+          />
+        )}
 
       </div>
     </div>
   )
+}
+
+// Chat message type
+interface ChatMessage {
+  role: 'user' | 'assistant'
+  content: string
+  action?: {
+    type: string
+    [key: string]: unknown
+  } | null
+}
+
+// Agent Chat - The AI interface for conversation
+function AgentChat({
+  vaultAddress,
+  userAddress,
+  onActionComplete
+}: {
+  vaultAddress: `0x${string}`
+  userAddress: `0x${string}`
+  onActionComplete: () => void
+}) {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      role: 'assistant',
+      content: "Hey! I'm PayPilot, your AI payment assistant. I can help you:\n\n• Create payments: \"Pay vitalik.eth 50 USDC weekly\"\n• Check balance: \"What's my balance?\"\n• Bridge funds: \"Bridge 100 USDC from Arbitrum\"\n\nWhat would you like to do?",
+      action: null
+    }
+  ])
+  const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const handleSend = async () => {
+    if (!input.trim() || loading) return
+
+    const userMessage = input.trim()
+    setInput('')
+    setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+    setLoading(true)
+
+    try {
+      const response = await fetch(`${API_URL}/api/agent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: userMessage }),
+      })
+
+      const data = await response.json()
+
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: data.message,
+        action: data.action
+      }])
+
+      // If action completed, refresh balances
+      if (data.action) {
+        onActionComplete()
+      }
+    } catch (err) {
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: "Sorry, I couldn't connect to the server. Please try again.",
+        action: null
+      }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-96">
+      {/* Messages area */}
+      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+        {messages.map((msg, i) => (
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-xs md:max-w-md rounded-lg px-4 py-2 ${
+              msg.role === 'user' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-700 text-gray-100'
+            }`}>
+              <p className="whitespace-pre-wrap text-sm">{msg.content}</p>
+              {msg.action && (
+                <ActionCard action={msg.action} vaultAddress={vaultAddress} userAddress={userAddress} />
+              )}
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-700 rounded-lg px-4 py-2">
+              <p className="text-gray-400 text-sm">Thinking...</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Input area */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Type a message..."
+          disabled={loading}
+          className="flex-1 bg-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-400"
+        />
+        <button
+          onClick={handleSend}
+          disabled={loading || !input.trim()}
+          className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 px-6 py-2 rounded-lg font-medium"
+        >
+          Send
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Action Card - Shows the actionable buttons for all the responses of the agent
+function ActionCard({ 
+  action, 
+  vaultAddress,
+  userAddress 
+}: { 
+  action: { type: string; [key: string]: unknown }
+  vaultAddress: `0x${string}`
+  userAddress: `0x${string}`
+}) {
+  const { writeContract, data: hash, isPending } = useWriteContract()
+  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  const handleCreateRule = () => {
+    if (action.type !== 'create_rule') return
+    writeContract({
+      address: vaultAddress,
+      abi: vaultAbi.abi,
+      functionName: 'createRule',
+      args: [
+        SUPPORTED_TOKENS.USDC,
+        action.recipient as string,
+        parseUnits(String(action.amount), 6),
+        BigInt(action.interval as number),
+        (action.description as string) || 'Payment rule'
+      ],
+    })
+  }
+
+  // New rule creation
+  if (action.type === 'create_rule') {
+    return (
+      <div className="mt-2 pt-2 border-t border-gray-600">
+        <p className="text-xs text-gray-400 mb-2">
+          → {String(action.amount)} USDC to {String(action.recipient).slice(0, 10)}...
+        </p>
+        {isSuccess ? (
+          <p className="text-green-400 text-xs">✓ Rule created!</p>
+        ) : (
+          <button
+            onClick={handleCreateRule}
+            disabled={isPending || isConfirming}
+            className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 px-3 py-1 rounded text-xs font-medium"
+          >
+            {isPending ? 'Confirm...' : isConfirming ? 'Creating...' : 'Create Rule'}
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  // To get a quote between the different chaines
+  if (action.type === 'cross_chain_quote') {
+    return (
+      <div className="mt-2 pt-2 border-t border-gray-600">
+        <p className="text-xs text-gray-400">
+          → Bridge {String(action.amount)} USDC from {String(action.fromChain)}
+        </p>
+        <p className="text-xs text-blue-400 mt-1">Switch to Cross-Chain tab to get quote</p>
+      </div>
+    )
+  }
+
+  return null
 }
 
 // Popular chains for the dropdown (subset of all the LI.FI supported chains)

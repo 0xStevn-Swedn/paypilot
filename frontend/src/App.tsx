@@ -57,7 +57,7 @@ const styles: Record<string, CSSProperties> = {
   },
   balanceLabel: {
     color: '#9ca3af',
-    fontSize: '146x',
+    fontSize: '18px',
     marginBottom: '8px',
   },
   balanceValue: {
@@ -166,7 +166,7 @@ const styles: Record<string, CSSProperties> = {
     padding: '16px',
     textAlign: 'center' as const,
     color: '#6b7280',
-    fontSize: '14px',
+    fontSize: '18px',
     borderTop: '1px solid #1f2937',
   },
 }
@@ -195,10 +195,34 @@ function App() {
 
   return (
     <div style={styles.container}>
+      {/* Fixed logo in top-left corner */}
+      <img 
+        src="/PayPilot_logo.png" 
+        alt="" 
+        style={{ 
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          height: '200px',
+          zIndex: 100,
+        }} 
+      />
+
       <header style={styles.header}>
-        <img src="/PayPilot_logo.png" alt="PayPilot" style={{ height: '40px' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{
+            fontSize: '28px',
+            fontWeight: 'bold',
+            color: '#e0ecee',
+            textShadow: '0 0 8px rgba(6, 182, 212, 0.6)',
+            letterSpacing: '1px',
+          }}>
+            PayPilot
+          </span>
+        </div>
         <ConnectButton />
       </header>
+    
 
       <main style={styles.main}>
         {isConnected ? (
@@ -388,7 +412,7 @@ function AgentChat({ vaultAddress, userAddress, onActionComplete }: { vaultAddre
         ))}
         {loading && (
           <div style={styles.chatBubbleAssistant}>
-            <p style={{ color: '#9ca3af', fontSize: '14px', margin: 0 }}>Thinking...</p>
+            <p style={{ color: '#9ca3af', fontSize: '18px', margin: 0 }}>Thinking...</p>
           </div>
         )}
       </div>
@@ -509,10 +533,10 @@ function CrossChainDeposit({ vaultAddress, userAddress, onSuccess }: { vaultAddr
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <p style={{ color: '#9ca3af', fontSize: '14px' }}>Deposit USDC from another chain into your vault. Powered by LI.FI.</p>
+      <p style={{ color: '#9ca3af', fontSize: '18px' }}>Deposit USDC from another chain into your vault. Powered by LI.FI.</p>
 
       <div>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Source Chain</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Source Chain</label>
         <select value={selectedChain} onChange={(e) => { setSelectedChain(Number(e.target.value)); setQuote(null) }}
           style={{ ...styles.input, cursor: 'pointer' }}>
           {POPULAR_CHAINS.map(chain => <option key={chain.id} value={chain.id}>{chain.name}</option>)}
@@ -520,7 +544,7 @@ function CrossChainDeposit({ vaultAddress, userAddress, onSuccess }: { vaultAddr
       </div>
 
       <div>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
         <input type="number" value={amount} onChange={(e) => { setAmount(e.target.value); setQuote(null) }} placeholder="0.00" style={styles.input} />
       </div>
 
@@ -529,14 +553,14 @@ function CrossChainDeposit({ vaultAddress, userAddress, onSuccess }: { vaultAddr
         {loading ? 'Getting quote...' : 'Get Quote'}
       </button>
 
-      {error && <p style={{ color: '#f87171', fontSize: '14px' }}>{error}</p>}
+      {error && <p style={{ color: '#f87171', fontSize: '18px' }}>{error}</p>}
 
       {quote && (
         <div style={styles.card}>
           <h4 style={{ color: '#34d399', fontWeight: 500, marginBottom: '8px' }}>Quote Ready</h4>
-          <p style={{ fontSize: '14px', color: '#d1d5db' }}>Send: {(Number(quote.estimate.fromAmount) / 1e6).toFixed(2)} USDC on {selectedChainName}</p>
-          <p style={{ fontSize: '14px', color: '#d1d5db' }}>Receive: {(Number(quote.estimate.toAmount) / 1e6).toFixed(2)} USDC in vault</p>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>Route: {quote.tool} • ~{Math.ceil(quote.estimate.executionDuration / 60)} min</p>
+          <p style={{ fontSize: '18px', color: '#d1d5db' }}>Send: {(Number(quote.estimate.fromAmount) / 1e6).toFixed(2)} USDC on {selectedChainName}</p>
+          <p style={{ fontSize: '18px', color: '#d1d5db' }}>Receive: {(Number(quote.estimate.toAmount) / 1e6).toFixed(2)} USDC in vault</p>
+          <p style={{ fontSize: '18px', color: '#6b7280' }}>Route: {quote.tool} • ~{Math.ceil(quote.estimate.executionDuration / 60)} min</p>
           <button onClick={() => alert('Cross-chain execution coming soon!')}
             style={{ ...styles.button, backgroundColor: '#22c55e', marginTop: '12px' }}>
             Execute Bridge
@@ -564,12 +588,12 @@ function DepositForm({ vaultAddress, userBalance, onSuccess }: { vaultAddress: `
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={{ ...styles.input, flex: 1 }} />
           <button onClick={() => setAmount(maxBalance)} style={{ backgroundColor: '#374151', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer' }}>MAX</button>
         </div>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>Available: {maxBalance} USDC</p>
+        <p style={{ fontSize: '18px', color: '#6b7280', marginTop: '8px' }}>Available: {maxBalance} USDC</p>
       </div>
 
       {step === 'approve' ? (
@@ -601,7 +625,7 @@ function WithdrawForm({ vaultAddress, vaultBalance, onSuccess }: { vaultAddress:
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
         <div style={{ display: 'flex', gap: '8px' }}>
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={{ ...styles.input, flex: 1 }} />
           <button onClick={() => setAmount(maxBalance)} style={{ backgroundColor: '#374151', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer' }}>MAX</button>
@@ -639,7 +663,7 @@ function AIInput({ onParsed }: { onParsed: (data: { recipient: string; amount: n
 
   return (
     <div style={{ ...styles.card, marginBottom: '16px' }}>
-      <label style={{ display: 'block', fontSize: '14px', color: '#d1d5db', fontWeight: 500, marginBottom: '12px' }}>Describe your payment in plain English</label>
+      <label style={{ display: 'block', fontSize: '18px', color: '#d1d5db', fontWeight: 500, marginBottom: '12px' }}>Describe your payment in plain English</label>
       <div style={{ display: 'flex', gap: '8px' }}>
         <input type="text" value={message} onChange={(e) => setMessage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           placeholder='e.g. "pay alice.eth 100 USDC every week"' disabled={loading}
@@ -649,7 +673,7 @@ function AIInput({ onParsed }: { onParsed: (data: { recipient: string; amount: n
           {loading ? '...' : 'Parse'}
         </button>
       </div>
-      {error && <p style={{ color: '#f87171', fontSize: '14px', marginTop: '8px' }}>{error}</p>}
+      {error && <p style={{ color: '#f87171', fontSize: '18px', marginTop: '8px' }}>{error}</p>}
     </div>
   )
 }
@@ -699,17 +723,17 @@ function CreateRuleForm({ vaultAddress, prefill, onSuccess, onCancel }: { vaultA
       <h3 style={{ fontWeight: 600, marginBottom: '16px' }}>Create Payment Rule</h3>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Recipient Address</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Recipient Address</label>
         <input type="text" value={recipient} onChange={(e) => setRecipient(e.target.value)} placeholder="0x..." style={styles.input} />
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Amount (USDC)</label>
         <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={styles.input} />
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Frequency</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Frequency</label>
         <select value={interval} onChange={(e) => setInterval(e.target.value)} style={styles.input}>
           <option value="0">One-time payment</option>
           <option value="60">Every minute (testing)</option>
@@ -721,7 +745,7 @@ function CreateRuleForm({ vaultAddress, prefill, onSuccess, onCancel }: { vaultA
       </div>
 
       <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', fontSize: '14px', color: '#9ca3af', marginBottom: '8px' }}>Description</label>
+        <label style={{ display: 'block', fontSize: '18px', color: '#9ca3af', marginBottom: '8px' }}>Description</label>
         <input type="text" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="e.g., Rent payment" style={styles.input} />
       </div>
 
@@ -745,7 +769,7 @@ function RulesList({ vaultAddress, refreshKey, onRuleExecuted, onRuleCancelled }
     return (
       <div style={{ textAlign: 'center', padding: '32px 0', color: '#6b7280' }}>
         <p>No payment rules yet.</p>
-        <p style={{ fontSize: '14px' }}>Create your first autopilot payment above!</p>
+        <p style={{ fontSize: '18px' }}>Create your first autopilot payment above!</p>
       </div>
     )
   }
@@ -778,18 +802,18 @@ function RuleCard({ vaultAddress, ruleId, onExecuted, onCancelled }: { vaultAddr
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
         <div>
           <p style={{ fontWeight: 500 }}>{ruleData.description}</p>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>To: {ruleData.recipient.slice(0, 6)}...{ruleData.recipient.slice(-4)}</p>
+          <p style={{ fontSize: '18px', color: '#6b7280' }}>To: {ruleData.recipient.slice(0, 6)}...{ruleData.recipient.slice(-4)}</p>
         </div>
         <div style={{ textAlign: 'right' }}>
           <p style={{ fontWeight: 'bold', color: '#34d399' }}>{formatUnits(ruleData.amount, 6)} USDC</p>
-          <p style={{ fontSize: '14px', color: '#6b7280' }}>{formatInterval(ruleData.interval)}</p>
+          <p style={{ fontSize: '18px', color: '#6b7280' }}>{formatInterval(ruleData.interval)}</p>
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: '8px' }}>
         <button onClick={() => executeWrite({ address: vaultAddress, abi: vaultAbi.abi, functionName: 'executeRule', args: [BigInt(ruleId)] })}
           disabled={isExecuting || isExecuteConfirming}
-          style={{ ...styles.button, flex: 1, backgroundColor: '#22c55e', padding: '8px 16px', fontSize: '14px', ...(isExecuting || isExecuteConfirming ? styles.buttonDisabled : {}) }}>
+          style={{ ...styles.button, flex: 1, backgroundColor: '#22c55e', padding: '8px 16px', fontSize: '18px', ...(isExecuting || isExecuteConfirming ? styles.buttonDisabled : {}) }}>
           {isExecuting || isExecuteConfirming ? 'Executing...' : '▶ Execute'}
         </button>
         <button onClick={() => cancelWrite({ address: vaultAddress, abi: vaultAbi.abi, functionName: 'cancelRule', args: [BigInt(ruleId)] })}

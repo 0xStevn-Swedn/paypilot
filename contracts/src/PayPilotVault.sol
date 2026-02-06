@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -6,6 +7,13 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title PayPilotVault
 /// @notice The personal vault for all automated crypto payements
+
+// This is the main smart contract. Each user gets their own vault. The vault can:
+// - Hold tokens (like USDC) deposited by the user
+// - Create payment rules (one-time or recurring payments)
+// - Execute payments automatically based on rules
+// - Set spending limits (daily/weekly caps for safety)
+
 contract PayPilotVault is Ownable {
     using SafeERC20 for IERC20;
 

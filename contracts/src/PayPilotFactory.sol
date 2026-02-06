@@ -1,9 +1,14 @@
+// SPDX-License-Identifier: MIT 
 pragma solidity ^0.8.20;
 
 import {PayPilotVault} from "./PayPilotVault.sol";
 
 /// @title PayPilotFactory
 /// @notice Deploys the personal PayPilot vaults for users
+
+// Key functions:
+// - createVault() — Deploy a new vault for the caller
+// - getVault(user) — Get the vault address for any user
 contract PayPilotFactory {
 
     // ---------- State

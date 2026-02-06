@@ -1,6 +1,9 @@
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
 
+// Simple payment parser using OpenAI.
+// Takes a message like "pay alice.eth 100 USDC weekly" and returns structured data
+
 // Load .env before reading the API key
 dotenv.config()
 

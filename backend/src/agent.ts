@@ -1,6 +1,17 @@
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
 
+// Conversational AI agent using OpenAI.
+
+// More advanced than `ai.ts`. The agent understands multiple commands:
+// - Create payment rules
+// - Check balance
+// - List rules
+// - Get cross-chain quotes
+// - Answer questions
+
+// Returns a message (to show the user) and an action (to execute on-chain).
+
 dotenv.config()
 
 const openai = new OpenAI({

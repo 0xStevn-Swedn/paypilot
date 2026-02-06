@@ -1,5 +1,11 @@
 import { createConfig, getQuote, getChains } from '@lifi/sdk'
 
+// Cross-chain bridge integration using LI.FI SDK.
+
+// LI.FI finds the best route to move tokens between chains. This file:
+// - `getCrossChainQuote(...)` — Get a quote for bridging (e.g., USDC from Arbitrum to Ethereum)
+// - `getSupportedChains()` — List all chains LI.FI supports
+
 // Initialize THE LI.FI SDK
 createConfig({
   integrator: 'paypilot',

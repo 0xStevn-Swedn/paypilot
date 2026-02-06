@@ -5,6 +5,14 @@ import { parsePaymentIntent } from './ai.js'
 import { getCrossChainQuote, getSupportedChains } from './lifi.js'
 import { processAgentMessage } from './agent.js'
 
+// The main server file.
+// This is the entry point, t creates an Express.js server with these endpoints:
+// GET /health --> Check if server is running
+// POST /api/parse --> Parse natural language into payment data
+// POST /api/agent --> Conversational AI agent
+// POST /api/quote --> Get cross-chain bridge quote from LI.FI
+// GET /api/chains --> List supported chains
+
 dotenv.config()
 
 const app = express()

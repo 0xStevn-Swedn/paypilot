@@ -57,7 +57,7 @@ const styles: Record<string, CSSProperties> = {
   },
   balanceLabel: {
     color: '#9ca3af',
-    fontSize: '14px',
+    fontSize: '146x',
     marginBottom: '8px',
   },
   balanceValue: {
@@ -66,7 +66,7 @@ const styles: Record<string, CSSProperties> = {
     color: 'white',
   },
   balanceUnit: {
-    fontSize: '16px',
+    fontSize: '20px',
     color: '#6b7280',
     marginLeft: '8px',
   },
@@ -80,7 +80,7 @@ const styles: Record<string, CSSProperties> = {
   tab: {
     flex: 1,
     padding: '16px',
-    fontSize: '14px',
+    fontSize: '20px',
     fontWeight: 500,
     background: 'none',
     border: 'none',
@@ -111,7 +111,7 @@ const styles: Record<string, CSSProperties> = {
     borderRadius: '12px',
     padding: '12px 16px',
     color: 'white',
-    fontSize: '16px',
+    fontSize: '20px',
     outline: 'none',
   },
   button: {
@@ -153,7 +153,7 @@ const styles: Record<string, CSSProperties> = {
     backgroundColor: '#1f2937',
     color: 'white',
     borderRadius: '16px',
-    padding: '12px 16px',
+    padding: '14px 18px',
     maxWidth: '80%',
     marginBottom: '12px',
     border: '1px solid #374151',
@@ -382,7 +382,7 @@ function AgentChat({ vaultAddress, userAddress, onActionComplete }: { vaultAddre
       <div style={styles.chatMessages}>
         {messages.map((msg, i) => (
           <div key={i} style={msg.role === 'user' ? styles.chatBubbleUser : styles.chatBubbleAssistant}>
-            <p style={{ whiteSpace: 'pre-wrap', fontSize: '14px', margin: 0 }}>{msg.content}</p>
+            <p style={{ whiteSpace: 'pre-wrap', fontSize: '18px', margin: 0 }}>{msg.content}</p>
             {msg.action && <ActionCard action={msg.action} vaultAddress={vaultAddress} userAddress={userAddress} />}
           </div>
         ))}
@@ -606,7 +606,7 @@ function WithdrawForm({ vaultAddress, vaultBalance, onSuccess }: { vaultAddress:
           <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" style={{ ...styles.input, flex: 1 }} />
           <button onClick={() => setAmount(maxBalance)} style={{ backgroundColor: '#374151', color: 'white', border: 'none', borderRadius: '12px', padding: '12px 16px', cursor: 'pointer' }}>MAX</button>
         </div>
-        <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '8px' }}>Vault balance: {maxBalance} USDC</p>
+        <p style={{ fontSize: '18px', color: '#6b7280', marginTop: '8px' }}>Vault balance: {maxBalance} USDC</p>
       </div>
 
       <button onClick={() => writeContract({ address: vaultAddress, abi: vaultAbi.abi, functionName: 'withdraw', args: [SUPPORTED_TOKENS.USDC, parseUnits(amount || '0', 6)] })}

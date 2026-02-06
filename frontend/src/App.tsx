@@ -55,7 +55,10 @@ function App() {
   return (
     <div className="min-h-screen p-8">
       <header className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold">✈️ PayPilot</h1>
+        <div className="flex items-center gap-3">
+          <img src="/PayPilot_logo_No_Text.png" alt="PayPilot" style={{ height: '200px' }} />
+          <h1 className="text-2xl font-bold text-cyan-400 text-glow-cyan">PayPilot</h1>
+        </div>
         <ConnectButton />
       </header>
 

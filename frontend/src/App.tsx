@@ -6,6 +6,9 @@ import { FACTORY_ADDRESS, SUPPORTED_TOKENS } from './contracts'
 import factoryAbi from './abi/PayPilotFactory.json'
 import vaultAbi from './abi/PayPilotVault.json'
 
+// The main React application
+// This is a big file with all the UI components
+
 // ERC20 ABI - Only the functions we need for token interactions
 const erc20Abi = [
   {

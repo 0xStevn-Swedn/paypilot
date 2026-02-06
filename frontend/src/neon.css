@@ -1,0 +1,150 @@
+/* PayPilot Neon Theme */
+
+/* Background with brick texture */
+body {
+  background-color: #0D1B2A;
+  background-image: url('/background.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}
+
+/* Neon glow effects for boxes */
+.neon-cyan {
+  box-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF, 0 0 30px #00FFFF;
+}
+
+.neon-pink {
+  box-shadow: 0 0 10px #FF00FF, 0 0 20px #FF00FF, 0 0 30px #FF00FF;
+}
+
+.neon-orange {
+  box-shadow: 0 0 10px #FF8800, 0 0 20px #FF8800, 0 0 30px #FF8800;
+}
+
+.neon-green {
+  box-shadow: 0 0 10px #00FF00, 0 0 20px #00FF00, 0 0 30px #00FF00;
+}
+
+/* Text glow effects */
+.text-glow-cyan {
+  text-shadow: 0 0 10px #00FFFF, 0 0 20px #00FFFF;
+}
+
+.text-glow-pink {
+  text-shadow: 0 0 10px #FF00FF, 0 0 20px #FF00FF;
+}
+
+.text-glow-orange {
+  text-shadow: 0 0 10px #FF8800, 0 0 20px #FF8800;
+}
+
+/* Neon input fields */
+.neon-input {
+  background-color: rgba(26, 42, 58, 0.8) !important;
+  border: 2px solid #00FFFF !important;
+  box-shadow: 0 0 5px rgba(0, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neon-input:focus {
+  outline: none;
+  border-color: #FF00FF !important;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.5);
+}
+
+/* Neon button - cyan */
+.neon-button-cyan {
+  background: transparent;
+  border: 2px solid #00FFFF;
+  color: #00FFFF;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neon-button-cyan:hover:not(:disabled) {
+  background: rgba(0, 255, 255, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+}
+
+/* Neon button - pink */
+.neon-button-pink {
+  background: transparent;
+  border: 2px solid #FF00FF;
+  color: #FF00FF;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neon-button-pink:hover:not(:disabled) {
+  background: rgba(255, 0, 255, 0.1);
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+}
+
+/* Neon button - orange */
+.neon-button-orange {
+  background: transparent;
+  border: 2px solid #FF8800;
+  color: #FF8800;
+  box-shadow: 0 0 10px rgba(255, 136, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neon-button-orange:hover:not(:disabled) {
+  background: rgba(255, 136, 0, 0.1);
+  box-shadow: 0 0 20px rgba(255, 136, 0, 0.5);
+}
+
+/* Neon button - green */
+.neon-button-green {
+  background: transparent;
+  border: 2px solid #00FF00;
+  color: #00FF00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+  transition: all 0.3s ease;
+}
+
+.neon-button-green:hover:not(:disabled) {
+  background: rgba(0, 255, 0, 0.1);
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+}
+
+/* Disabled button */
+.neon-button-cyan:disabled,
+.neon-button-pink:disabled,
+.neon-button-orange:disabled,
+.neon-button-green:disabled {
+  border-color: #4a5568;
+  color: #4a5568;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/* Neon card container */
+.neon-card {
+  background-color: rgba(13, 27, 42, 0.85);
+  border: 1px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+/* Neon tab - inactive */
+.neon-tab {
+  background: transparent;
+  border: 2px solid #4a5568;
+  color: #a0aec0;
+  transition: all 0.3s ease;
+}
+
+.neon-tab:hover {
+  border-color: rgba(0, 255, 255, 0.5);
+  color: #00FFFF;
+}
+
+/* Neon tab - active */
+.neon-tab-active {
+  background: transparent;
+  border: 2px solid #00FFFF;
+  color: #00FFFF;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.3);
+}

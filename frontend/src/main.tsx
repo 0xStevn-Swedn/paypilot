@@ -7,6 +7,7 @@ import App from './App'
 import { config } from './wagmi'
 import '@rainbow-me/rainbowkit/styles.css'
 import './index.css'
+import './neon.css'
 
 const queryClient = new QueryClient()
 
@@ -14,7 +15,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()}>
+        <RainbowKitProvider theme={darkTheme({
+          accentColor: '#00FFFF',
+          accentColorForeground: '#0D1B2A',
+        })}>
           <App />
         </RainbowKitProvider>
       </QueryClientProvider>

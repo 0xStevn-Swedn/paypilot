@@ -2,7 +2,13 @@ import { getDefaultConfig } from '@rainbow-me/rainbowkit'
 import { sepolia } from 'wagmi/chains'
 import { defineChain } from 'viem'
 
-// Define the Arc testnet as a custom chain (not built into wagmi yet)
+// Wallet and chain configuration.
+
+// Configures RainbowKit (wallet connection) and defines which chains to support:
+// - Sepolia (Ethereum testnet)
+// - Arc Testnet (Circle's new L1)
+
+// Define the Arc testnet as a custom chain
 export const arcTestnet = defineChain({
   id: 5042002,
   name: 'Arc Testnet',

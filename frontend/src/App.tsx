@@ -177,7 +177,7 @@ const erc20Abi = [
   { name: 'decimals', type: 'function', inputs: [], outputs: [{ type: 'uint8' }], stateMutability: 'view' },
 ] as const
 
-const API_URL = 'http://localhost:3001'
+const API_URL = 'https://paypilot-backend.onrender.com/'
 
 function formatInterval(seconds: bigint): string {
   const secs = Number(seconds)

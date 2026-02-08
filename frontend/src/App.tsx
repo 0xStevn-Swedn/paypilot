@@ -269,10 +269,17 @@ function Dashboard({ userAddress }: { userAddress: `0x${string}` }) {
 }
 
 function CreateVaultButton({ onSuccess }: { onSuccess: () => void }) {
-  const { writeContract, data: hash, isPending } = useWriteContract()
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
 
   useEffect(() => { if (isSuccess) onSuccess() }, [isSuccess, onSuccess])
+  
+  useEffect(() => {
+    if (error) {
+      console.error('CreateRuleForm error:', error.message, error)
+      alert('Create rule failed: ' + error.message)
+    }
+  }, [error])
 
   return (
     <button
@@ -355,7 +362,7 @@ function VaultDashboard({ vaultAddress, userAddress }: { vaultAddress: `0x${stri
 
       {/* Tab Content */}
       <div>
-        {activeTab === 'agent' && <AgentChat vaultAddress={vaultAddress} userAddress={userAddress} onActionComplete={refetchAll} />}
+        {activeTab === 'agent' && <AgentChat vaultAddress={vaultAddress} userAddress={userAddress} onActionComplete={refetchAll} vaultBalance={vaultBalance as bigint | undefined} userBalance={userBalance as bigint | undefined} />}
         {activeTab === 'deposit' && <DepositForm vaultAddress={vaultAddress} userBalance={userBalance as bigint | undefined} onSuccess={refetchAll} />}
         {activeTab === 'withdraw' && <WithdrawForm vaultAddress={vaultAddress} vaultBalance={vaultBalance as bigint | undefined} onSuccess={refetchAll} />}
         {activeTab === 'rules' && <PaymentRulesTab vaultAddress={vaultAddress} refreshKey={rulesRefreshKey} onRuleCreated={refreshRules} onRuleExecuted={() => { refreshRules(); refetchAll() }} />}
@@ -371,9 +378,9 @@ interface ChatMessage {
   action?: { type: string; [key: string]: unknown } | null
 }
 
-function AgentChat({ vaultAddress, userAddress, onActionComplete }: { vaultAddress: `0x${string}`; userAddress: `0x${string}`; onActionComplete: () => void }) {
+function AgentChat({ vaultAddress, userAddress, onActionComplete, vaultBalance, userBalance }: { vaultAddress: `0x${string}`; userAddress: `0x${string}`; onActionComplete: () => void; vaultBalance: bigint | undefined; userBalance: bigint | undefined }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Hey! I'm PayPilot, your AI payment assistant.\n\n• Create payments: \"Pay vitalik.eth 50 USDC weekly\"\n• Check balance: \"What's my balance?\"\n• Bridge funds: \"Bridge 100 USDC from Arbitrum\"\n\nWhat would you like to do?", action: null }
+    { role: 'assistant', content: "Hey! I'm PayPilot, your AI payment assistant.\n\n• Create payments: \"Pay 0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045 50 USDC weekly\"\n• Check balance: \"What's my balance?\"\n• Bridge funds: \"Bridge 100 USDC from Arbitrum\"\n\nWhat would you like to do?", action: null }
   ])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -392,7 +399,16 @@ function AgentChat({ vaultAddress, userAddress, onActionComplete }: { vaultAddre
         body: JSON.stringify({ message: userMessage }),
       })
       const data = await response.json()
-      setMessages(prev => [...prev, { role: 'assistant', content: data.message, action: data.action }])
+      
+      // Enhance message with real data for certain actions
+      let enhancedMessage = data.message
+      if (data.action?.type === 'check_balance') {
+        const vaultBal = vaultBalance ? formatUnits(vaultBalance, 6) : '0'
+        const walletBal = userBalance ? formatUnits(userBalance, 6) : '0'
+        enhancedMessage = `Here's your current balance:\n\n💰 Vault Balance: ${vaultBal} USDC\n👛 Wallet Balance: ${walletBal} USDC\n\nYour vault balance is what's available for automated payments.`
+      }
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: enhancedMessage, action: data.action }])
       if (data.action) onActionComplete()
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: "Sorry, I couldn't connect to the server.", action: null }])
@@ -439,9 +455,15 @@ function AgentChat({ vaultAddress, userAddress, onActionComplete }: { vaultAddre
   )
 }
 
-function ActionCard({ action, vaultAddress }: { action: { type: string; [key: string]: unknown }; vaultAddress: `0x${string}`; userAddress: `0x${string}` }) {
-  const { writeContract, data: hash, isPending } = useWriteContract()
+function ActionCard({ action, vaultAddress, userAddress }: { action: { type: string; [key: string]: unknown }; vaultAddress: `0x${string}`; userAddress: `0x${string}` }) {
+  const { writeContract, data: hash, isPending, error } = useWriteContract()
   const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash })
+
+  useEffect(() => {
+    if (error) {
+      console.error('ActionCard writeContract error:', error.message, error)
+    }
+  }, [error])
 
   if (action.type === 'create_rule') {
     return (

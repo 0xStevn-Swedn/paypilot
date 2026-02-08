@@ -33,6 +33,6 @@ export const arcTestnet = defineChain({
 
 export const config = getDefaultConfig({
   appName: 'PayPilot',
-  projectId: 'YOUR_WALLETCONNECT_PROJECT_ID',
+  projectId: 'a3f59fe26d5de2d43962f60fe695becc',
   chains: [sepolia, arcTestnet],
 })
